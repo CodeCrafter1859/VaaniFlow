@@ -4,6 +4,8 @@ React + Vite + TypeScript, Tailwind CSS, Lucide icons and React Router. Uses nat
 
 ## Install and run
 
+For the complete local app, run **`python run.py` from `backend/`**. It also starts this frontend and installs missing dependencies. Follow the [one-command setup](../backend/README.md#start-everything-locally-with-one-command) for prerequisites. The instructions below are for running only the frontend independently.
+
 Use Node.js 22.19+ and npm. From `frontend/`:
 
 ```bash

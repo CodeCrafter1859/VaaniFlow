@@ -2,6 +2,27 @@
 
 Two independently hosted Python services share PostgreSQL. `app.main:app` is the lightweight FastAPI REST service. `transcription_worker.main:app` owns WebSockets, FFmpeg and original open-source OpenAI Whisper inference. No paid transcription service, Alembic or Docker is used.
 
+## Start everything locally with one command
+
+From PowerShell:
+
+```powershell
+cd "D:\Personal Project\procucev-task\backend"
+python run.py
+```
+
+The development launcher installs missing Python environments/dependencies and frontend dependencies, creates the configured PostgreSQL database if missing, initializes tables, prints a first-user login token if the database has no users, and starts REST (8000), Whisper (8001), and Vite (5173). Open **http://localhost:5173** after it reports that all services are ready. Existing user tokens are preserved. First-time worker installation and model download can take several minutes.
+
+If `DATABASE_URL` still has the sample password, startup now prompts for host, port, username, database and your **existing PostgreSQL password**. Press Enter to accept defaults; the password is hidden. The URL is safely encoded (including passwords containing `@`, `:`, `/` or `#`) and saved only to the ignored `backend/.env`. No password is guessed or reset. To change saved credentials later: `.venv\Scripts\python.exe -m scripts.configure_database --force`. Noninteractive startup requires preconfigured credentials. A `DATABASE_URL` process environment variable overrides `.env`; correct or unset it first if it contains a placeholder.
+
+One-time prerequisites: Python 3.12, Node.js/npm, FFmpeg on PATH, and a running PostgreSQL server. The database named in `DATABASE_URL` is created automatically when missing, using the configured role (which needs `CREATEDB` for first-time creation). Set `DATABASE_URL` in `backend/.env` to its real credentials. The launcher does not install system software, start the PostgreSQL operating-system service, or elevate database privileges. Existing databases are left intact. Authentication/network failures never trigger creation; a missing database is created through the `postgres` maintenance database with the same credentials and TLS settings. See installation steps below. Stop any manually started services occupying ports 8000, 8001 or 5173 first; the launcher never kills unrelated processes.
+
+`python run.py --check` reports prerequisites without changes. `--no-install` prevents automatic dependency installation. `--startup-timeout 1800` allows more time for first-time model loading. If dependencies change after installation, rerun the corresponding pip install/npm ci command below; automatic installation detects missing dependencies, not every version change.
+
+All output stays in one terminal. Press **Ctrl+C** to stop all launched processes. If one service exits or startup times out, the launcher stops the others. Finish and save recordings before stopping or closing this terminal. Local URLs/CORS are aligned through child-process environment variables; `.env` settings are not overwritten. Missing `.env` files are copied from their examples.
+
+This launcher is **development-only** and excluded from Vercel. Production continues to use the independently deployed entrypoints below. No process spawning or schema initialization is added to FastAPI's application startup.
+
 ## Local installation
 
 Use Python 3.12 and PostgreSQL 15+. From `backend/`:
@@ -37,7 +58,7 @@ The worker loads `WHISPER_MODEL=base` on startup, downloading weights on first u
 
 Copy `.env.example` to `.env` if not already present. Actual `.env` is ignored. Set the PostgreSQL password, database name and a random service key (generate one with `python -c "import secrets; print(secrets.token_urlsafe(32))"`). The REST service and worker must use the same database and `TRANSCRIPTION_SERVICE_API_KEY`. Keep this key out of frontend variables and logs.
 
-Create an empty development database using your PostgreSQL administrator account:
+With `python run.py`, missing databases and tables are created automatically. For independent/manual startup, create an empty development database using your PostgreSQL administrator account:
 
 ```bash
 createdb -U postgres speech_to_text
@@ -45,7 +66,7 @@ python -m app.db.init_db
 python -m scripts.create_user "Your name"
 ```
 
-`create_all()` runs **only** in the dedicated initialization script, not on requests or serverless cold starts. It creates users, one-use tickets and transcriptions. It does not alter existing tables; future schema changes require reviewed SQL and backups. The transcription includes the requested fields plus an indexed `owner_id` for authorization. `create_user` prints a cryptographically random access token once; only a SHA-256 digest is stored. Transfer the token privately and enter it at the frontend sign-in screen. There is no public registration or shared default account. To revoke/rotate a token, replace that user's `token_hash` through an administrator script or approved database operation; tickets already issued expire within 60 seconds and active streams finish within the session limit.
+`create_all()` runs in the dedicated initialization scripts (`app.db.init_db` or the launcher's `scripts.prepare_local`), never on requests or serverless cold starts. It creates users, one-use tickets and transcriptions. It does not alter existing tables; future schema changes require reviewed SQL and backups. The transcription includes the requested fields plus an indexed `owner_id` for authorization. `create_user` prints a cryptographically random access token once; only a SHA-256 digest is stored. Transfer the token privately and enter it at the frontend sign-in screen. There is no public registration or shared default account. To revoke/rotate a token, replace that user's `token_hash` through an administrator script or approved database operation; tickets already issued expire within 60 seconds and active streams finish within the session limit.
 
 ```bash
 # REST environment, terminal 1

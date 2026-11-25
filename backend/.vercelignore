@@ -1,4 +1,5 @@
 .env
+run.py
 .venv
 .venv-worker
 tests

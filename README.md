@@ -7,4 +7,4 @@ Private English/Hindi/mixed-language transcription using React, FastAPI, Postgre
 - [Implementation specification](spec/implementation.md)
 - [Verification evidence and remaining release gates](verification/RESULTS.md)
 
-Start with backend database initialization and user provisioning, run REST on `8000`, worker on `8001`, then `npm run dev` in `frontend`. Both projects include ignored `.env` files and tracked `.env.example` templates. A working PostgreSQL connection, FFmpeg and worker model installation are required for actual transcription.
+For local development, run `python run.py` from `backend` to install missing project dependencies, create a missing database, initialize tables and launch REST, Whisper and the frontend together. Open http://localhost:5173. PostgreSQL must be running with valid credentials configured in `backend/.env`; Python, Node/npm and FFmpeg must be installed. See the backend README for one-time setup. Both projects include ignored `.env` files and tracked `.env.example` templates. Production services remain independently deployable.
