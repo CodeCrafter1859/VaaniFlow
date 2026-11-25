@@ -1,0 +1,13 @@
+.env
+.venv
+.venv-worker
+tests
+scripts
+transcription_worker
+requirements-dev.txt
+*.pt
+*.wav
+.cache
+.test-postgres
+requirements-dev.lock
+verification

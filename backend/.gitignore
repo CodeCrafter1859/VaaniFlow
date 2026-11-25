@@ -1,0 +1,10 @@
+.env
+.venv/
+.venv-worker/
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+*.db
+*.wav
+.cache/
+.test-postgres/
