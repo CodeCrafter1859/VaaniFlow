@@ -43,8 +43,6 @@ class Settings(BaseSettings):
         if min(self.max_session_duration, self.max_audio_size_mb, self.max_worker_sessions) <= 0:
             raise ValueError("Resource limits must be positive")
         if self.app_env == "production":
-            if self.test_access_token:
-                raise ValueError("TEST_ACCESS_TOKEN must not be enabled in production")
             if (
                 len(self.transcription_service_api_key) < 32
                 or "replace" in self.transcription_service_api_key

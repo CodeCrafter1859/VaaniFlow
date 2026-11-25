@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { AudioLines, ShieldCheck } from "lucide-react";
-import { useAuth } from "../context/AuthContext";const testLoginEnabled = import.meta.env.VITE_ENABLE_TEST_LOGIN === "true";
+import { useAuth } from "../context/AuthContext";
+
+const testLoginEnabled = import.meta.env.VITE_ENABLE_TEST_LOGIN === "true";
 const testAccessToken = import.meta.env.VITE_TEST_ACCESS_TOKEN?.trim() ?? "";
 export function Login() {
   const { login } = useAuth();
