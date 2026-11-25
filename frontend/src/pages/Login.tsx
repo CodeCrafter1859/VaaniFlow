@@ -78,7 +78,17 @@ export function Login() {
         <button className="button primary" disabled={busy}>
           {busy ? "Connecting…" : "Open workspace"}
         </button>
-        <small>
+        {testLoginEnabled && testAccessToken && (
+          <button className="button secondary" type="button" disabled={busy} onClick={async () => {
+            setBusy(true);
+            setError("");
+            try { await login(testAccessToken); }
+            catch (e) { setError((e as Error).message); }
+            finally { setBusy(false); }
+          }}>
+            Open shared test workspace
+          </button>
+        )}        <small>
           Ask your administrator for a token. It stays in memory and is cleared
           when this page closes.
         </small>
