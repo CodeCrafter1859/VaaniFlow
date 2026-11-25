@@ -33,6 +33,19 @@ async def prepare():
         async with engine.begin() as connection:
             await connection.run_sync(Base.metadata.create_all)
         async with Session() as db:
+            settings = get_settings()
+            if settings.test_access_token:
+                test_user = await db.scalar(
+                    select(User).where(User.token_hash == digest(settings.test_access_token))
+                )
+                if test_user is None:
+                    db.add(
+                        User(
+                            name=settings.test_user_name,
+                            token_hash=digest(settings.test_access_token),
+                        )
+                    )
+                    await db.commit()
             if await db.scalar(select(User.id).limit(1)) is None:
                 token = secrets.token_urlsafe(32)
                 db.add(User(name="Local user", token_hash=digest(token)))

@@ -65,6 +65,9 @@ createdb -U postgres speech_to_text
 python -m app.db.init_db
 python -m scripts.create_user "Your name"
 ```
+### Shared local test login (testing only)
+
+Generate a random token and set it as `TEST_ACCESS_TOKEN` in the ignored `backend/.env`. Keep `APP_ENV=development`; production startup rejects this setting. The `python run.py` launcher creates the shared test account automatically. Use the same token in the local frontend settings below. Do not use a shared account on a public deployment; anyone with its token can read, edit, or delete its transcripts.
 
 `create_all()` runs in the dedicated initialization scripts (`app.db.init_db` or the launcher's `scripts.prepare_local`), never on requests or serverless cold starts. It creates users, one-use tickets and transcriptions. It does not alter existing tables; future schema changes require reviewed SQL and backups. The transcription includes the requested fields plus an indexed `owner_id` for authorization. `create_user` prints a cryptographically random access token once; only a SHA-256 digest is stored. Transfer the token privately and enter it at the frontend sign-in screen. There is no public registration or shared default account. To revoke/rotate a token, replace that user's `token_hash` through an administrator script or approved database operation; tickets already issued expire within 60 seconds and active streams finish within the session limit.
 
@@ -152,6 +155,29 @@ Documentation checked against official provider sources on 2026-11-25. Configura
 Before public exposure configure Vercel Firewall/IP rate limiting for REST and equivalent proxy limits on the worker, including strict limits on unauthenticated traffic and ticket creation. App-level session bounds are per worker process, not a global distributed quota. A secret bearer token is appropriate for a provisioned private workspace, not a substitute for an enterprise SSO/account recovery system. Use HTTPS exclusively and privately distribute/rotate user tokens. CSP in the frontend should be tightened from `https:`/`wss:` to your exact service hosts.
 
 Release gate: run all tests/checks, audit the **worker's resolved PyTorch/Whisper environment**, verify `/ready`, authenticate, record real English/Hindi/mixed audio, upload, edit, export and delete in staging. Test denial with a second user's token. Measure inference time against window duration under expected concurrency; lower concurrency or use a faster device/model if the worker falls behind. Monitor errors, active sessions, inference latency, CPU/RAM and DB connectivity. Hold release on missing save confirmations, privacy/ownership failures or unacceptable transcription quality. Roll back to the previous known application revision while preserving the database; `create_all` supplies no destructive rollback. Database backups have their own retention policy.
+
+## Verified Railway startup settings
+
+When overriding Railpack's install command, explicitly create its expected virtual environment. Use these service variables:
+
+```dotenv
+RAILPACK_PYTHON_VERSION=3.12
+RAILPACK_DEPLOY_APT_PACKAGES=ffmpeg
+PORT=8001
+MAX_WORKER_SESSIONS=1
+OMP_NUM_THREADS=2
+MKL_NUM_THREADS=2
+```
+
+Set `RAILPACK_INSTALL_CMD` to:
+
+```bash
+python -m venv /app/.venv && /app/.venv/bin/python -m pip install --upgrade pip==26.3 && /app/.venv/bin/python -m pip install torch --index-url https://download.pytorch.org/whl/cpu && /app/.venv/bin/python -m pip install -r transcription_worker/requirements.txt
+```
+
+Use `/app/.venv/bin/python -m uvicorn transcription_worker.main:app --host 0.0.0.0 --port $PORT --workers 1 --ws-max-size 32768 --ws-max-queue 8 --limit-concurrency 32` as the start command. This avoids accidentally launching the system interpreter without the worker's dependencies. Trigger a new source deployment after changing the start command; redeploying an older build can retain its old command.
+
+Vercel prioritizes `pyproject.toml` for dependency installation. Its `[project].dependencies` must stay aligned with the lightweight REST `requirements.txt`; Whisper and PyTorch belong only to the worker.
 
 ## Known limits
 
